@@ -8,43 +8,67 @@
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Date and Time Card -->
-        <div class="card time-card">
-            <h1 id="current-time">00:00:00</h1>
-            <p id="current-date">Loading date...</p>
+        
+        <!-- Left Side: Time and Weather -->
+        <div class="column">
+            <div class="card time-card">
+                <h1 id="current-time">00:00:00</h1>
+                <p id="current-date">Loading date...</p>
+            </div>
+
+            <div class="card weather-card">
+                <div class="weather-main">
+                    <div id="weather-icon-container"></div>
+                    <div class="weather-info">
+                        <h2 id="weather-temp">--°F</h2>
+                        <p id="weather-condition">Connecting...</p>
+                    </div>
+                </div>
+                <div class="weather-sub-metrics">
+                    <div class="metric-item"><span class="label">💧 Humidity</span><span id="weather-humidity" class="val">--%</span></div>
+                    <div class="metric-item"><span class="label">💨 Wind</span><span id="weather-wind" class="val">-- mph</span></div>
+                </div>
+            </div>
+
+            <div class="card forecast-card">
+                <h3>7-Day Weekly Forecast</h3>
+                <div id="forecast-grid-container" class="forecast-grid"></div>
+            </div>
         </div>
 
-        <!-- Weather Main Conditions Card -->
-        <div class="card weather-card">
-            <div class="weather-main">
-                <div id="weather-icon-container"></div>
-                <div class="weather-info">
-                    <h2 id="weather-temp">--°F</h2>
-                    <p id="weather-condition">Connecting...</p>
+        <!-- Right Side: Epever Solar Tracking Station -->
+        <div class="column">
+            <div class="card solar-card">
+                <div class="solar-header">
+                    <h3>☀️ Epever Solar Charger</h3>
+                    <span id="solar-status" class="status-badge">Offline</span>
                 </div>
-            </div>
-            <!-- New Core Metrics Row -->
-            <div class="weather-sub-metrics">
-                <div class="metric-item">
-                    <span class="label">💧 Humidity</span>
-                    <span id="weather-humidity" class="val">--%</span>
+                <div class="state-banner" id="solar-state">IDLE</div>
+
+                <div class="solar-grid">
+                    <div class="solar-box">
+                        <h4>Solar Array (PV)</h4>
+                        <p><span class="label">Power:</span> <strong id="solar-w-pv">--</strong> W</p>
+                        <p><span class="label">Voltage:</span> <span id="solar-v-pv">--</span> V</p>
+                        <p><span class="label">Current:</span> <span id="solar-a-pv">--</span> A</p>
+                    </div>
+                    <div class="solar-box">
+                        <h4>Battery Bank Terminals</h4>
+                        <p><span class="label">Power:</span> <strong id="solar-w-bat">--</strong> W</p>
+                        <p><span class="label">Voltage:</span> <span id="solar-v-bat">--</span> V</p>
+                        <p><span class="label">Current:</span> <span id="solar-a-bat">--</span> A</p>
+                    </div>
                 </div>
-                <div class="metric-item">
-                    <span class="label">💨 Wind</span>
-                    <span id="weather-wind" class="val">-- mph</span>
+
+                <div class="solar-footer-metrics">
+                    <div class="sub-box"><span class="label">Controller Temp</span><span id="solar-temp-dev">--°C</span></div>
+                    <div class="sub-box"><span class="label">Battery Temp</span><span id="solar-temp-bat">--°C</span></div>
+                    <div class="sub-box"><span class="label">Total Lifetime Yield</span><span id="solar-kwh">-- kWh</span></div>
                 </div>
             </div>
         </div>
 
-        <!-- New Card Layout: 7-Day Forecast Grid -->
-        <div class="card forecast-card">
-            <h3>7-Day Weekly Forecast</h3>
-            <div id="forecast-grid-container" class="forecast-grid">
-                <!-- Injected dynamically by javascript loops -->
-            </div>
-        </div>
     </div>
-
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

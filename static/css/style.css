@@ -12,10 +12,18 @@ body {
 
 .dashboard-container {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: 20px;
     width: 100%;
-    max-width: 600px; /* Perfect sizing structural limit for dashboards */
+    max-width: 1100px;
+}
+
+.column {
+    flex: 1;
+    min-width: 340px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .card {
@@ -23,44 +31,45 @@ body {
     border-radius: 16px;
     padding: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    text-align: center;
 }
 
-.time-card h1 { font-size: 3rem; margin: 0; color: #00adb5; }
-.time-card p { color: #888; margin: 6px 0 0 0; }
-
+/* Time & Weather Cards */
+.time-card { text-align: center; }
+.time-card h1 { font-size: 3.2rem; margin: 0; color: #00adb5; }
+.time-card p { color: #888; margin: 4px 0 0 0; }
 .weather-main { display: flex; align-items: center; justify-content: center; gap: 20px; }
 .weather-svg { width: 90px; height: 90px; pointer-events: none; }
 .weather-info h2 { font-size: 2.8rem; margin: 0; }
 .weather-info p { font-size: 1.1rem; color: #aaa; margin: 4px 0 0 0; }
+.weather-sub-metrics { display: flex; justify-content: space-around; margin-top: 15px; padding-top: 15px; border-top: 1px solid #2d2d2d; text-align: center;}
+.metric-item { display: flex; flex-direction: column; }
+.metric-item .label { font-size: 0.8rem; color: #888; }
+.metric-item .val { font-size: 1.1rem; font-weight: bold; }
 
-/* Sub Metrics Row configuration */
-.weather-sub-metrics {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #2d2d2d;
-}
-.metric-item { display: flex; flex-direction: column; gap: 4px; }
-.metric-item .label { font-size: 0.85rem; color: #888; }
-.metric-item .val { font-size: 1.2rem; font-weight: bold; color: #fff; }
-
-/* Weekly Forecast structural list matrix components */
-.forecast-card h3 { text-align: left; margin: 0 0 15px 0; color: #00adb5; font-size: 1.1rem; }
+/* Forecast Grid Layout */
+.forecast-card h3 { margin: 0 0 15px 0; color: #00adb5; font-size: 1.1rem; }
 .forecast-grid { display: flex; flex-direction: column; gap: 10px; }
-
-.forecast-day-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: #252525;
-    padding: 10px 16px;
-    border-radius: 10px;
-}
-.forecast-date { width: 100px; text-align: left; font-weight: 500; }
-.forecast-icon-box { display: flex; align-items: center; justify-content: center; }
+.forecast-day-item { display: flex; align-items: center; justify-content: space-between; background-color: #252525; padding: 10px 16px; border-radius: 10px; }
+.forecast-date { width: 90px; text-align: left; }
 .forecast-svg { width: 35px; height: 35px; pointer-events: none; }
-.forecast-temps { width: 90px; text-align: right; }
-.forecast-temps .high { font-weight: bold; color: #fff; margin-right: 10px; }
-.forecast-temps .low { color: #777; }
+.forecast-temps .high { font-weight: bold; margin-right: 8px; }
+.forecast-temps .low { color: #666; }
+
+/* ☀️ Solar Interface Card Styles */
+.solar-header { display: flex; justify-content: space-between; align-items: center; }
+.solar-header h3 { margin: 0; color: #00adb5; }
+.status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; background: #333; }
+.status-badge.online { background-color: #1b5e20; color: #a5d6a7; }
+.status-badge.offline { background-color: #b71c1c; color: #ef9a9a; }
+
+.state-banner { background-color: #00adb5; color: #121212; font-weight: bold; text-align: center; padding: 8px; border-radius: 8px; margin: 15px 0; font-size: 1.1rem; letter-spacing: 1px; text-transform: uppercase;}
+.solar-grid { display: flex; gap: 15px; margin-bottom: 15px; }
+.solar-box { flex: 1; background-color: #252525; padding: 15px; border-radius: 12px; }
+.solar-box h4 { margin: 0 0 10px 0; border-bottom: 1px solid #3d3d3d; padding-bottom: 5px; color: #aaa; }
+.solar-box p { margin: 8px 0; font-size: 0.95rem; }
+.solar-box strong { font-size: 1.3rem; color: #00adb5; }
+
+.solar-footer-metrics { display: flex; justify-content: space-between; background-color: #171717; padding: 12px; border-radius: 10px; text-align: center;}
+.sub-box { display: flex; flex-direction: column; gap: 4px; }
+.sub-box .label { font-size: 0.75rem; color: #666; }
+.sub-box span:not(.label) { font-weight: bold; font-size: 0.95rem; }
