@@ -14,15 +14,33 @@
             <p id="current-date">Loading date...</p>
         </div>
 
-        <!-- Weather Forecast Card -->
+        <!-- Weather Main Conditions Card -->
         <div class="card weather-card">
             <div class="weather-main">
-                <!-- SVG Icon container dynamically filled by Javascript -->
                 <div id="weather-icon-container"></div>
                 <div class="weather-info">
                     <h2 id="weather-temp">--°F</h2>
                     <p id="weather-condition">Connecting...</p>
                 </div>
+            </div>
+            <!-- New Core Metrics Row -->
+            <div class="weather-sub-metrics">
+                <div class="metric-item">
+                    <span class="label">💧 Humidity</span>
+                    <span id="weather-humidity" class="val">--%</span>
+                </div>
+                <div class="metric-item">
+                    <span class="label">💨 Wind</span>
+                    <span id="weather-wind" class="val">-- mph</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Card Layout: 7-Day Forecast Grid -->
+        <div class="card forecast-card">
+            <h3>7-Day Weekly Forecast</h3>
+            <div id="forecast-grid-container" class="forecast-grid">
+                <!-- Injected dynamically by javascript loops -->
             </div>
         </div>
     </div>
