@@ -1,0 +1,62 @@
+body {
+    background-color: #121212;
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 90vh;
+}
+
+.dashboard-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    width: 100%;
+    max-width: 800px;
+}
+
+.card {
+    background-color: #1e1e1e;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+.time-card h1 {
+    font-size: 3rem;
+    margin: 0;
+    color: #00adb5;
+}
+
+.time-card p {
+    color: #888;
+    margin: 8px 0 0 0;
+}
+
+.weather-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.weather-svg {
+    width: 100px;
+    height: 100px;
+    pointer-events: none; /* Prevents raw hover conflicts within embedded elements */
+}
+
+.weather-info text-align: left; {
+    font-size: 2.5rem;
+    margin: 0;
+}
+
+.weather-info p {
+    font-size: 1.1rem;
+    color: #aaa;
+    margin: 4px 0 0 0;
+}
