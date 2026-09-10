@@ -9,7 +9,7 @@
 <body>
     <div class="dashboard-container">
         
-        <!-- Left Side: Time and Weather -->
+        <!-- Left Column: Time, Current Weather, & Weekly Forecast -->
         <div class="column">
             <div class="card time-card">
                 <h1 id="current-time">00:00:00</h1>
@@ -36,36 +36,72 @@
             </div>
         </div>
 
-        <!-- Right Side: Epever Solar Tracking Station -->
+        <!-- Right Column: Epever Mppt + Dual JBD Bluetooth BMS Array -->
         <div class="column">
+            
+            <!-- Combined Battery Power Meter Status Card -->
+            <div class="card bms-master-card">
+                <div class="bms-header">
+                    <h3>🔋 Combined Lithium Storage</h3>
+                    <span id="bms-sys-state" class="status-badge">Connecting...</span>
+                </div>
+                
+                <!-- Dynamic Battery Level Container Component -->
+                <div class="battery-meter-container">
+                    <div class="battery-shell">
+                        <div class="battery-tip"></div>
+                        <div id="battery-fluid-level" class="battery-fluid" style="width: 0%;"></div>
+                        <div id="battery-percentage-text" class="battery-percentage-label">0%</div>
+                    </div>
+                </div>
+
+                <div class="bms-summary-grid">
+                    <div class="summary-metric"><span class="label">System Bus Voltage</span><strong id="bms-v-avg">--</strong> V</div>
+                    <div class="summary-metric"><span class="label">Net Combined Load</span><strong id="bms-a-total">--</strong> A</div>
+                    <div class="summary-metric"><span class="label">Power Exchange</span><strong id="bms-w-total">--</strong> W</div>
+                    <div class="summary-metric"><span class="label">Remaining Capacity</span><strong id="bms-ah-total">--</strong> Ah</div>
+                </div>
+
+                <!-- Individual Battery Breakdown Panels -->
+                <div class="individual-cells-row">
+                    <div class="cell-status-box">
+                        <h5>Pack 1 (<span id="b1-status">--</span>)</h5>
+                        <p><span id="b1-v">--</span>V | <span id="b1-a">--</span>A | <strong><span id="b1-soc">--</span>%</strong></p>
+                    </div>
+                    <div class="cell-status-box">
+                        <h5>Pack 2 (<span id="b2-status">--</span>)</h5>
+                        <p><span id="b2-v">--</span>V | <span id="b2-a">--</span>A | <strong><span id="b2-soc">--</span>%</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Epever Solar Card Components -->
             <div class="card solar-card">
                 <div class="solar-header">
-                    <h3>☀️ Epever Solar Charger</h3>
+                    <h3>☀️ Epever Solar Generation</h3>
                     <span id="solar-status" class="status-badge">Offline</span>
                 </div>
                 <div class="state-banner" id="solar-state">IDLE</div>
-
                 <div class="solar-grid">
                     <div class="solar-box">
-                        <h4>Solar Array (PV)</h4>
+                        <h4>Solar Panels (PV)</h4>
                         <p><span class="label">Power:</span> <strong id="solar-w-pv">--</strong> W</p>
                         <p><span class="label">Voltage:</span> <span id="solar-v-pv">--</span> V</p>
                         <p><span class="label">Current:</span> <span id="solar-a-pv">--</span> A</p>
                     </div>
                     <div class="solar-box">
-                        <h4>Battery Bank Terminals</h4>
+                        <h4>Charger Terminals</h4>
                         <p><span class="label">Power:</span> <strong id="solar-w-bat">--</strong> W</p>
                         <p><span class="label">Voltage:</span> <span id="solar-v-bat">--</span> V</p>
                         <p><span class="label">Current:</span> <span id="solar-a-bat">--</span> A</p>
                     </div>
                 </div>
-
                 <div class="solar-footer-metrics">
                     <div class="sub-box"><span class="label">Controller Temp</span><span id="solar-temp-dev">--°C</span></div>
-                    <div class="sub-box"><span class="label">Battery Temp</span><span id="solar-temp-bat">--°C</span></div>
-                    <div class="sub-box"><span class="label">Total Lifetime Yield</span><span id="solar-kwh">-- kWh</span></div>
+                    <div class="sub-box"><span class="label">Lifetime Yield</span><span id="solar-kwh">-- kWh</span></div>
                 </div>
             </div>
+
         </div>
 
     </div>

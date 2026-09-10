@@ -40,25 +40,17 @@ function fetchTelemetrySmart() {
                 document.body.style.opacity = "1.0";
             }
 
-            // 1. Process Weather Data
+            // 1. Render Weather Components
             document.getElementById('weather-temp').textContent = `${data.weather.temp_f}°F`;
             document.getElementById('weather-condition').textContent = data.weather.condition;
             document.getElementById('weather-humidity').textContent = `${data.weather.humidity}%`;
             document.getElementById('weather-wind').textContent = `${data.weather.wind_speed} mph`;
 
-            const weatherCard = document.querySelector('.weather-card');
-            if (!data.hardware.weather_online) {
-                weatherCard.style.opacity = "0.5";
-                document.getElementById('weather-condition').textContent = "Weather Offline (Stale)";
-            } else {
-                weatherCard.style.opacity = "1.0";
-            }
-
             const iconName = getIconFilename(data.weather.wmo_code, data.weather.is_day);
             document.getElementById('weather-icon-container').innerHTML = 
                 `<object type="image/svg+xml" data="/static/weather-icons/${iconName}" class="weather-svg"></object>`;
 
-            // 2. Process Forecast Data
+            // 2. Render Forecast Array Rows
             const forecastContainer = document.getElementById('forecast-grid-container');
             forecastContainer.innerHTML = '';
             data.forecast.forEach((day, index) => {
@@ -73,11 +65,11 @@ function fetchTelemetrySmart() {
                 forecastContainer.insertAdjacentHTML('beforeend', dayHtml);
             });
 
-            // 3. Process Epever Solar Data
+            // 3. Render Epever Solar Fields
             const s = data.solar;
-            const statusBadge = document.getElementById('solar-status');
-            statusBadge.textContent = s.status;
-            statusBadge.className = `status-badge ${data.hardware.epever_online ? 'online' : 'offline'}`;
+            const sBadge = document.getElementById('solar-status');
+            sBadge.textContent = s.status;
+            sBadge.className = `status-badge ${data.hardware.epever_online ? 'online' : 'offline'}`;
             
             document.getElementById('solar-state').textContent = s.state;
             document.getElementById('solar-w-pv').textContent = s.w_pv;
@@ -87,8 +79,35 @@ function fetchTelemetrySmart() {
             document.getElementById('solar-v-bat').textContent = s.v_bat;
             document.getElementById('solar-a-bat').textContent = s.a_bat;
             document.getElementById('solar-temp-dev').textContent = `${s.device_t}°C`;
-            document.getElementById('solar-temp-bat').textContent = `${s.battery_t}°C`;
             document.getElementById('solar-kwh').textContent = `${s.total_kwh} kWh`;
+
+            // 4. Render Lithium BMS & Animate Fluid Level Levels
+            const b = data.bms;
+            document.getElementById('bms-sys-state').textContent = b.status;
+            document.getElementById('bms-v-avg').textContent = b.v_combined.toFixed(2);
+            document.getElementById('bms-a-total').textContent = b.a_total.toFixed(2);
+            document.getElementById('bms-w-total').textContent = Math.abs(b.w_total).toFixed(0);
+            document.getElementById('bms-ah-total').textContent = b.ah_total.toFixed(1);
+
+            const fillPct = b.soc_avg;
+            const fluidBar = document.getElementById('battery-fluid-level');
+            fluidBar.style.width = `${fillPct}%`;
+            document.getElementById('battery-percentage-text').textContent = `${fillPct}%`;
+
+            if (fillPct <= 20) fluidBar.style.backgroundColor = "#ff1744"; // Warning Red
+            else if (fillPct <= 50) fluidBar.style.backgroundColor = "#ff9100"; // Warning Shift Orange
+            else fluidBar.style.backgroundColor = "#00e676"; // Lithium Green
+
+            // Map sub-pack cell indicators
+            document.getElementById('b1-status').textContent = b.b1_status;
+            document.getElementById('b1-soc').textContent = b.b1_soc;
+            document.getElementById('b1-v').textContent = b.b1_v.toFixed(1);
+            document.getElementById('b1-a').textContent = b.b1_a.toFixed(1);
+
+            document.getElementById('b2-status').textContent = b.b2_status;
+            document.getElementById('b2-soc').textContent = b.b2_soc;
+            document.getElementById('b2-v').textContent = b.b2_v.toFixed(1);
+            document.getElementById('b2-a').textContent = b.b2_a.toFixed(1);
 
             setTimeout(fetchTelemetrySmart, 3000);
         })
