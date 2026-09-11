@@ -126,7 +126,6 @@ async def connect_and_poll_battery(bat_id, address):
             bms_cache[bat_id].update({"status": "Retrying...", "voltage": 0.0, "current": 0.0, "soc": 0})
             bms_cache[bat_id]["buffer"].clear()
             await asyncio.sleep(4)
-
 def bms_asyncio_thread_worker():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -148,6 +147,7 @@ def calculate_crc(data):
     return bytes([crc & 0xFF, (crc >> 8) & 0xFF])
 
 def execute_modbus_query(start_reg, count):
+    """Sends a Modbus command over TCP socket streams safely."""
     high_block, low_block = divmod(start_reg, 256)
     count_high, count_low = divmod(count, 256)
     base_frame = bytes([EPEVER_UNIT_ID, 0x04, high_block, low_block, count_high, count_low])
@@ -166,36 +166,62 @@ def execute_modbus_query(start_reg, count):
             response.extend(chunk)
             if len(response) >= expected_len: break
         s.close()
-        if len(response) >= expected_len and response[0] == EPEVER_UNIT_ID and response[1] == 0x04: return response
+        
+        # FIXED: Explicitly validate the individual array index offsets
+        if len(response) >= expected_len and response[0] == EPEVER_UNIT_ID and response[1] == 0x04: 
+            return response
     except Exception: pass
     return None
-
 def solar_polling_worker():
+    """Thread worker that loops indefinitely to poll the Epever controller."""
     global solar_cache
     while True:
-        res_live = execute_modbus_query(0x3100, 18)
-        res_history = execute_modbus_query(0x3312, 2)
+        # Split into smaller query chunks to avoid overflowing the Wi-Fi dongle buffer
+        res_live = execute_modbus_query(0x3100, 18)    # Real-time metrics
+        res_status = execute_modbus_query(0x3201, 1)  # Charging status word
+        res_history = execute_modbus_query(0x3312, 2) # Cumulative totals
+        
+        # Validate that the core metrics frame is intact (3 bytes header + 36 bytes data)
         if res_live and res_history and len(res_live) >= 39:
             try:
+                # --- SOLAR ARRAY (PV) INPUT METRICS ---
                 pv_v = ((res_live[3] << 8) | res_live[4]) / 100.0
                 pv_a = ((res_live[5] << 8) | res_live[6]) / 100.0
-                pv_w = ((res_live[7] << 8) | res_live[8]) / 100.0
+                pv_w_low = (res_live[7] << 8) | res_live[8]
+                pv_w_high = (res_live[9] << 8) | res_live[10]
+                pv_w = ((pv_w_high << 16) | pv_w_low) / 100.0
                 
-                batt_v = ((res_live[27] << 8) | res_live[28]) / 100.0
-                batt_a = ((res_live[29] << 8) | res_live[30]) / 100.0
-                batt_w = ((res_live[31] << 8) | res_live[32]) / 100.0
+                # --- CHARGER TERMINAL METRICS (BATTERY SIDE) ---
+                batt_v = ((res_live[11] << 8) | res_live[12]) / 100.0
+                batt_a = ((res_live[13] << 8) | res_live[14]) / 100.0
+                batt_w_low = (res_live[15] << 8) | res_live[16]
+                batt_w_high = (res_live[17] << 8) | res_live[18]
+                batt_w = ((batt_w_high << 16) | batt_w_low) / 100.0
                 
-                device_temp  = ((res_live[37] << 8) | res_live[38]) / 100.0
+                # --- TEMPERATURE METRICS ---
+                device_temp = ((res_live[37] << 8) | res_live[38]) / 100.0
                 
+                # --- HISTORICAL GENERATION ---
                 total_gen_low = (res_history[3] << 8) | res_history[4]
                 total_gen_high = (res_history[5] << 8) | res_history[6]
                 total_kwh = ((total_gen_high << 16) | total_gen_low) / 100.0
 
-                status_raw = (res_live[17] << 8) | res_live[18]
-                if status_raw == 0x01: mppt_state = "Bulk Charge"
-                elif status_raw == 0x02: mppt_state = "Boost/Absorption"
-                elif status_raw == 0x03: mppt_state = "Float"
-                else: mppt_state = "Harvest Active" if pv_w > 5.0 else "Night/Idle"
+                # --- ADVANCED CHARGING STATE DECODER ---
+                # Default safety fallback state configuration
+                mppt_state = "Harvest Active" if pv_w > 5.0 else "Night / Idle"
+                
+                # Process state flags only if the independent status query returned data safely
+                if res_status and len(res_status) >= 5:
+                    status_word = (res_status[3] << 8) | res_status[4]
+                    charging_stage_bits = (status_word >> 2) & 0x03
+                    is_equalizing = (status_word >> 1) & 0x01
+
+                    if charging_stage_bits == 0x01:
+                        mppt_state = "Bulk Charging ⚡"
+                    elif charging_stage_bits == 0x02:
+                        mppt_state = "Boost Charging 🚀" if not is_equalizing else "Equalize Charging 🔥"
+                    elif charging_stage_bits == 0x03:
+                        mppt_state = "Float Charging 💤"
 
                 solar_cache.update({
                     "status": "Online ✅", "state": mppt_state,
@@ -203,10 +229,17 @@ def solar_polling_worker():
                     "v_bat": round(batt_v, 2), "a_bat": round(batt_a, 1), "w_bat": round(batt_w, 0),
                     "device_t": round(device_temp, 1), "total_kwh": round(total_kwh, 2)
                 })
-            except Exception: pass
+            except Exception as e:
+                print(f"⚠️ [PARSING ERROR]: Metric decoding failure: {e}")
         else:
-            solar_cache.update({"status": "Disconnected ❌", "state": "OFFLINE", "v_pv":0.0,"a_pv":0.0,"w_pv":0.0,"v_bat":0.0,"a_bat":0.0,"w_bat":0.0,"device_t":0.0})
+            solar_cache.update({
+                "status": "Disconnected ❌", "state": "OFFLINE", 
+                "v_pv": 0.0, "a_pv": 0.0, "w_pv": 0.0, "v_bat": 0.0, "a_bat": 0.0, "w_bat": 0.0, "device_t": 0.0
+            })
+        
+        # Wait 3 seconds before requesting data from the Wi-Fi card again
         time.sleep(3)
+
 # ==============================================================================
 # ☁️ CLOUD OPEN-METEO WEATHER ENGINE
 # ==============================================================================

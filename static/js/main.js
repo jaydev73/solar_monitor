@@ -72,7 +72,20 @@ function fetchTelemetrySmart() {
             sBadge.className = `status-badge ${data.hardware.epever_online ? 'online' : 'offline'}`;
             
             document.getElementById('solar-state').textContent = s.state;
-            document.getElementById('solar-w-pv').textContent = s.w_pv;
+// Dynamic theme updates for charging states
+const stateBanner = document.getElementById('solar-state');
+stateBanner.textContent = s.state;
+
+// Reset past classes
+stateBanner.className = "state-banner";
+
+// Apply real-time color markers
+if (s.state.includes("Bulk")) stateBanner.classList.add("state-bulk");
+else if (s.state.includes("Boost") || s.state.includes("Equalize")) stateBanner.classList.add("state-boost");
+else if (s.state.includes("Float")) stateBanner.classList.add("state-float");
+else stateBanner.classList.add("state-idle");
+         
+   document.getElementById('solar-w-pv').textContent = s.w_pv;
             document.getElementById('solar-v-pv').textContent = s.v_pv;
             document.getElementById('solar-a-pv').textContent = s.a_pv;
             document.getElementById('solar-w-bat').textContent = s.w_bat;

@@ -1,64 +1,90 @@
-body { background-color: #121212; color: #ffffff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 95vh; }
-.dashboard-container { display: flex; flex-wrap: wrap; gap: 20px; width: 100%; max-width: 1100px; }
-.column { flex: 1; min-width: 340px; display: flex; flex-direction: column; gap: 20px; }
-.card { background-color: #1e1e1e; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); }
+body { background-color: #0c0f12; color: #f0f4f8; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; margin: 0; padding: 24px; display: flex; justify-content: center; align-items: center; min-height: 95vh; }
+.dashboard-container { display: flex; flex-wrap: wrap; gap: 24px; width: 100%; max-width: 1150px; }
+.column { flex: 1; min-width: 350px; display: flex; flex-direction: column; gap: 24px; }
+
+/* Premium Frosted Glass Card Design */
+.card { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 24px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); backdrop-filter: blur(8px); transition: border-color 0.3s ease, box-shadow 0.3s ease; }
+.card:hover { border-color: rgba(0, 173, 181, 0.3); box-shadow: 0 12px 40px 0 rgba(0, 173, 181, 0.1); }
 
 .time-card { text-align: center; }
-.time-card h1 { font-size: 3.2rem; margin: 0; color: #00adb5; }
-.time-card p { color: #888; margin: 4px 0 0 0; }
-.weather-main { display: flex; align-items: center; justify-content: center; gap: 20px; }
-.weather-svg { width: 90px; height: 90px; pointer-events: none; }
-.weather-info h2 { font-size: 2.8rem; margin: 0; }
-.weather-info p { font-size: 1.1rem; color: #aaa; margin: 4px 0 0 0; }
-.weather-sub-metrics { display: flex; justify-content: space-around; margin-top: 15px; padding-top: 15px; border-top: 1px solid #2d2d2d; }
+.time-card h1 { font-size: 3.5rem; margin: 0; color: #00adb5; font-weight: 700; letter-spacing: -1px; text-shadow: 0 0 20px rgba(0, 173, 181, 0.3); }
+.time-card p { color: #94a3b8; margin: 6px 0 0 0; font-size: 1.1rem; font-weight: 500; }
+
+/* Weather Card Floating Animation */
+.weather-main { display: flex; align-items: center; justify-content: center; gap: 24px; }
+.weather-svg { width: 100px; height: 100px; pointer-events: none; animation: floatWeatherIcon 6s infinite ease-in-out; }
+.weather-info h2 { font-size: 3rem; margin: 0; font-weight: 600; }
+.weather-info p { font-size: 1.1rem; color: #94a3b8; margin: 4px 0 0 0; }
+.weather-sub-metrics { display: flex; justify-content: space-around; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
 .metric-item { display: flex; flex-direction: column; text-align: center; }
-.metric-item .label { font-size: 0.8rem; color: #888; }
-.metric-item .val { font-size: 1.1rem; font-weight: bold; }
+.metric-item .label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.metric-item .val { font-size: 1.2rem; font-weight: 600; color: #f8fafc; }
 
-.forecast-card h3 { margin: 0 0 15px 0; color: #00adb5; font-size: 1.1rem; }
-.forecast-grid { display: flex; flex-direction: column; gap: 10px; }
-.forecast-day-item { display: flex; align-items: center; justify-content: space-between; background-color: #252525; padding: 10px 16px; border-radius: 10px; }
-.forecast-date { width: 90px; text-align: left; }
-.forecast-svg { width: 35px; height: 35px; pointer-events: none; }
-.forecast-temps .high { font-weight: bold; margin-right: 8px; }
-.forecast-temps .low { color: #666; }
-
-.bms-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-.bms-header h3 { margin: 0; color: #00adb5; }
-.status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; background: #333; }
-.status-badge.online { background-color: #1b5e20; color: #a5d6a7; }
-
-.battery-meter-container { display: flex; justify-content: center; width: 100%; margin: 20px 0; }
-.battery-shell { position: relative; width: 85%; height: 50px; border: 4px solid #444; border-radius: 12px; background-color: #171717; display: flex; align-items: center; overflow: hidden; padding: 2px; }
-.battery-tip { position: absolute; right: -12px; top: 13px; width: 8px; height: 20px; background-color: #444; border-radius: 0 4px 4px 0; }
-.battery-fluid { height: 100%; width: 0%; background-color: #00e676; border-radius: 6px; transition: width 0.8s ease, background-color 0.5s ease; animation: dynamic-pulse 3s infinite ease-in-out; }
-.battery-percentage-label { position: absolute; left: 0; right: 0; text-align: center; font-size: 1.4rem; font-weight: bold; color: #ffffff; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8); z-index: 2; }
-
-@keyframes dynamic-pulse {
-    0% { opacity: 0.90; }
-    50% { opacity: 1.0; filter: brightness(1.15); }
-    100% { opacity: 0.90; }
+@keyframes floatWeatherIcon {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+    100% { transform: translateY(0px); }
 }
 
-.bms-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
-.summary-metric { background-color: #252525; padding: 12px; border-radius: 10px; display: flex; flex-direction: column; font-size: 1.1rem; }
-.summary-metric .label { font-size: 0.75rem; color: #888; margin-bottom: 4px; }
-.summary-metric strong { font-size: 1.3rem; color: #00adb5; }
+/* 7-Day Forecast Styling */
+.forecast-card h3 { margin: 0 0 16px 0; color: #00adb5; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
+.forecast-grid { display: flex; flex-direction: column; gap: 12px; }
+.forecast-day-item { display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.03); padding: 12px 20px; border-radius: 12px; transition: background 0.2s ease; }
+.forecast-day-item:hover { background: rgba(15, 23, 42, 0.6); }
+.forecast-date { width: 100px; text-align: left; font-weight: 500; color: #cbd5e1; }
+.forecast-svg { width: 38px; height: 38px; pointer-events: none; }
+.forecast-temps .high { font-weight: 600; color: #ffffff; margin-right: 12px; }
+.forecast-temps .low { color: #64748b; }
 
-.individual-cells-row { display: flex; gap: 15px; border-top: 1px solid #2d2d2d; padding-top: 15px; }
-.cell-status-box { flex: 1; text-align: center; background-color: #171717; padding: 8px; border-radius: 8px; }
-.cell-status-box h5 { margin: 0 0 4px 0; color: #aaa; }
-.cell-status-box p { margin: 0; font-size: 0.85rem; color: #eee; }
+/* Commercial Grade Battery Fluid Tank styling */
+.bms-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.bms-header h3 { margin: 0; color: #00adb5; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }
+.status-badge { padding: 6px 14px; border-radius: 30px; font-size: 0.8rem; font-weight: 700; background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.05); }
+.status-badge.online { background: rgba(22, 163, 74, 0.2); color: #4ade80; border-color: rgba(74, 222, 128, 0.3); }
 
+.battery-meter-container { display: flex; justify-content: center; width: 100%; margin: 24px 0; }
+.battery-shell { position: relative; width: 90%; height: 55px; border: 3px solid #475569; border-radius: 14px; background: #0f172a; display: flex; align-items: center; overflow: hidden; box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.6); }
+.battery-tip { position: absolute; right: -10px; top: 16px; width: 8px; height: 20px; background-color: #475569; border-radius: 0 5px 5px 0; }
+
+/* Premium Fluid Wave Gradient Animation */
+.battery-fluid { height: 100%; width: 0%; background: linear-gradient(90deg, #22c55e, #4ade80); border-radius: 10px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
+.battery-fluid::after { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 100%); animation: batteryShimmer 2.5s infinite linear; }
+.battery-percentage-label { position: absolute; left: 0; right: 0; text-align: center; font-size: 1.5rem; font-weight: 700; color: #ffffff; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9); z-index: 2; font-variant-numeric: tabular-nums; }
+
+@keyframes batteryShimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.bms-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 24px 0; }
+.summary-metric { background: rgba(15, 23, 42, 0.3); border: 1px solid rgba(255, 255, 255, 0.02); padding: 14px; border-radius: 12px; display: flex; flex-direction: column; }
+.summary-metric .label { font-size: 0.75rem; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.summary-metric strong { font-size: 1.4rem; color: #00adb5; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.individual-cells-row { display: flex; gap: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 20px; }
+.cell-status-box { flex: 1; text-align: center; background: #0f172a; padding: 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.03); }
+.cell-status-box h5 { margin: 0 0 6px 0; color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; }
+.cell-status-box p { margin: 0; font-size: 0.95rem; color: #f1f5f9; font-variant-numeric: tabular-nums; }
+
+/* Solar Generation Layout Cards */
 .solar-header { display: flex; justify-content: space-between; align-items: center; }
-.solar-header h3 { margin: 0; color: #00adb5; }
-.state-banner { background-color: #00adb5; color: #121212; font-weight: bold; text-align: center; padding: 8px; border-radius: 8px; margin: 15px 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
-.solar-grid { display: flex; gap: 15px; margin-bottom: 15px; }
-.solar-box { flex: 1; background-color: #252525; padding: 12px; border-radius: 12px; }
-.solar-box h4 { margin: 0 0 10px 0; border-bottom: 1px solid #3d3d3d; padding-bottom: 5px; color: #aaa; font-size: 0.9rem; }
-.solar-box p { margin: 6px 0; font-size: 0.9rem; }
-.solar-box strong { font-size: 1.2rem; color: #00adb5; }
-.solar-footer-metrics { display: flex; justify-content: space-around; background-color: #171717; padding: 12px; border-radius: 10px; text-align: center; }
+.solar-header h3 { margin: 0; color: #00adb5; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }
+.state-banner { background: #00adb5; color: #0f172a; font-weight: 700; text-align: center; padding: 10px; border-radius: 10px; margin: 20px 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1.5px; box-shadow: 0 4px 14px 0 rgba(0, 173, 181, 0.2); }
+.solar-grid { display: flex; gap: 16px; margin-bottom: 20px; }
+.solar-box { flex: 1; background: rgba(15, 23, 42, 0.3); border: 1px solid rgba(255, 255, 255, 0.02); padding: 16px; border-radius: 14px; }
+.solar-box h4 { margin: 0 0 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 6px; color: #94a3b8; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.solar-box p { margin: 10px 0; font-size: 0.95rem; color: #cbd5e1; font-variant-numeric: tabular-nums; }
+.solar-box strong { font-size: 1.4rem; color: #00adb5; }
+.solar-footer-metrics { display: flex; justify-content: space-around; background: #0f172a; padding: 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.03); text-align: center; }
 .sub-box { display: flex; flex-direction: column; }
-.sub-box .label { font-size: 0.75rem; color: #666; }
-.sub-box span:not(.label) { font-weight: bold; font-size: 0.95rem; }
+.sub-box .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
+.sub-box span:not(.label) { font-weight: 600; font-size: 1.05rem; color: #f1f5f9; }
+/* Dynamic Color States for Commercial Charging Stages */
+#solar-state {
+    transition: background-color 0.5s ease, color 0.5s ease;
+}
+/* Triggered when state strings update in the future */
+.state-bulk { background-color: #f59e0b !important; color: #000 !important; }      /* Amber Alert */
+.state-boost { background-color: #3b82f6 !important; color: #fff !important; }     /* High Voltage Blue */
+.state-float { background-color: #10b981 !important; color: #fff !important; }     /* Float Safe Green */
+.state-idle { background-color: #475569 !important; color: #cbd5e1 !important; }  /* Sleek Slate Grey */
