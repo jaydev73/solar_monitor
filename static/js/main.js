@@ -71,21 +71,20 @@ function fetchTelemetrySmart() {
             sBadge.textContent = s.status;
             sBadge.className = `status-badge ${data.hardware.epever_online ? 'online' : 'offline'}`;
             
-            document.getElementById('solar-state').textContent = s.state;
-// Dynamic theme updates for charging states
-const stateBanner = document.getElementById('solar-state');
-stateBanner.textContent = s.state;
+            // Dynamic theme updates for charging states
+            const stateBanner = document.getElementById('solar-state');
+            stateBanner.textContent = s.state;
 
-// Reset past classes
-stateBanner.className = "state-banner";
+            // Reset past classes
+            stateBanner.className = "state-banner";
 
-// Apply real-time color markers
-if (s.state.includes("Bulk")) stateBanner.classList.add("state-bulk");
-else if (s.state.includes("Boost") || s.state.includes("Equalize")) stateBanner.classList.add("state-boost");
-else if (s.state.includes("Float")) stateBanner.classList.add("state-float");
-else stateBanner.classList.add("state-idle");
+            // Apply real-time color markers
+            if (s.state.includes("Bulk")) stateBanner.classList.add("state-bulk");
+            else if (s.state.includes("Boost") || s.state.includes("Equalize")) stateBanner.classList.add("state-boost");
+            else if (s.state.includes("Float")) stateBanner.classList.add("state-float");
+            else stateBanner.classList.add("state-idle");
          
-   document.getElementById('solar-w-pv').textContent = s.w_pv;
+            document.getElementById('solar-w-pv').textContent = s.w_pv;
             document.getElementById('solar-v-pv').textContent = s.v_pv;
             document.getElementById('solar-a-pv').textContent = s.a_pv;
             document.getElementById('solar-w-bat').textContent = s.w_bat;
@@ -93,6 +92,29 @@ else stateBanner.classList.add("state-idle");
             document.getElementById('solar-a-bat').textContent = s.a_bat;
             document.getElementById('solar-temp-dev').textContent = `${s.device_t}°C`;
             document.getElementById('solar-kwh').textContent = `${s.total_kwh} kWh`;
+
+            // 🎯 INJECTED RENDERING ENGINE FOR THE 12V DC ACCESSORY CARD
+            const toggleButton = document.getElementById('loadToggleButton');
+            const sourceLabel = document.getElementById('automation_source');
+
+            if (toggleButton && sourceLabel) {
+                sourceLabel.textContent = s.source;
+                
+                if (s.thermal_lock) {
+                    toggleButton.disabled = true;
+                    toggleButton.className = "btn-disabled-lock";
+                    toggleButton.innerText = "LOCKED BY THERMAL CORE AUTOMATION";
+                } else {
+                    toggleButton.disabled = false;
+                    if (s.load_status) {
+                        toggleButton.className = "btn-active-on";
+                        toggleButton.innerText = "12V Load: ON (Click to Stop)";
+                    } else {
+                        toggleButton.className = "btn-active-off";
+                        toggleButton.innerText = "12V Load: OFF (Click to Start)";
+                    }
+                }
+            }
 
             // 4. Render Lithium BMS & Animate Fluid Level Levels
             const b = data.bms;
@@ -133,6 +155,45 @@ else stateBanner.classList.add("state-idle");
         });
 }
 
+// ==============================================================================
+// 🔌 INJECTED: 12V MANUAL TOGGLE NETWORK CONTROLLER
+// ==============================================================================
+function handleManualLoadToggle() {
+    const toggleButton = document.getElementById('loadToggleButton');
+    if (!toggleButton) return;
+    
+    // Determine structural toggle directive based on layout css marker
+    const targetedAction = toggleButton.className.includes("btn-active-on") ? "OFF" : "ON";
+
+    fetch('/api/load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: targetedAction })
+    })
+    .then(res => {
+        if (!res.ok) {
+            return res.json().then(err => { throw new Error(err.message || "Action Prevented"); });
+        }
+        return res.json();
+    })
+    .then(data => {
+        // Instantly invoke updates for snappy responsiveness
+        if (typeof fetchTelemetrySmart === "function") {
+            setTimeout(fetchTelemetrySmart, 150);
+        }
+    })
+    .catch(err => alert("Control Interface Alert: " + err.message));
+}
+
+// Initialization Triggers
 setInterval(updateClock, 1000);
 updateClock();
 fetchTelemetrySmart();
+
+// Bind click event listener safely after layout frames load into window frame
+document.addEventListener("DOMContentLoaded", () => {
+    const btn = document.getElementById('loadToggleButton');
+    if (btn) {
+        btn.addEventListener('click', handleManualLoadToggle);
+    }
+});

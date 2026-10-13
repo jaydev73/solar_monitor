@@ -88,3 +88,81 @@ body { background-color: #0c0f12; color: #f0f4f8; font-family: 'Segoe UI', syste
 .state-boost { background-color: #3b82f6 !important; color: #fff !important; }     /* High Voltage Blue */
 .state-float { background-color: #10b981 !important; color: #fff !important; }     /* Float Safe Green */
 .state-idle { background-color: #475569 !important; color: #cbd5e1 !important; }  /* Sleek Slate Grey */
+
+/* Card for 12v Load
+.mppt-control-card {
+    background: #1e1e24;
+    color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 360px;
+    margin: 40px auto;
+    border: 1px solid #2d2d35;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
+
+.card-title-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.card-title-area h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.status-dot {
+    font-size: 0.75rem;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+.status-dot.online { background: rgba(4, 211, 97, 0.15); color: #04d361; }
+.status-dot.offline { background: rgba(247, 90, 104, 0.15); color: #f75a68; }
+
+.slider-row-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #25252d;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+}
+
+.row-label { font-size: 0.9rem; color: #e1e1e6; }
+
+/* CSS Sliding Switch Components */
+.toggle-switch { position: relative; display: inline-block; width: 46px; height: 24px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.slider-graphic {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #4a4a5a; transition: .25s ease; border-radius: 24px;
+}
+.slider-graphic:before {
+    position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px;
+    background-color: white; transition: .25s ease; border-radius: 50%;
+}
+input:checked + .slider-graphic { background-color: #04d361; }
+input:checked + .slider-graphic:before { transform: translateX(22px); }
+
+input:disabled + .slider-graphic { opacity: 0.3; cursor: not-allowed; }
+
+.card-metrics-row { display: flex; gap: 10px; }
+.metric-segment {
+    background: #25252d; flex: 1; padding: 12px; border-radius: 6px; text-align: center;
+}
+.segment-title { font-size: 0.65rem; color: #8d8d99; text-transform: uppercase; display: block; margin-bottom: 4px; }
+.segment-data { font-size: 1.15rem; font-weight: bold; color: #ffffff; }
+.offline-gear {
+    width: 32px;  /* Adjust this value to your preferred size */
+    height: 32px; /* Keep width and height equal so it stays square */
+    color: #007bff; 
+    animation: spin 2s linear infinite; 
+}
+
