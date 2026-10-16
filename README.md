@@ -1,3 +1,5 @@
+<img width="1124" height="814" alt="image" src="https://github.com/user-attachments/assets/343a7b7b-9114-4db1-a33c-fb433bec1656" />
+
 # solar_monitor
 
 Solar Power Connections
