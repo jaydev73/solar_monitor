@@ -9,13 +9,18 @@ import random
 from queue import Queue
 from datetime import datetime
 import logging
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, Response
 from dotenv import load_dotenv
+import hmac
+import hashlib
+from urllib.parse import urlparse
+from werkzeug.security import check_password_hash
 from bleak import BleakClient
 from gtts import gTTS
 import pygame
 # Initialize tracking and configuration maps
-load_dotenv(dotenv_path='/home/pijay/solar_monitor/.env')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))   # folder this file lives in
+load_dotenv(dotenv_path=os.path.join(BASE_DIR, '.env'))
 
 EPEVER_IP_ADDRESS = os.getenv("EPEVER_IP_ADDRESS", "127.0.0.1")
 EPEVER_PORT = int(os.getenv("EPEVER_PORT", 9999))
@@ -50,7 +55,7 @@ solar_cache = {
     "status": "Disconnected ❌", "state": "OFFLINE",
     "v_pv": 0.0, "a_pv": 0.0, "w_pv": 0.0,
     "v_bat": 0.0, "a_bat": 0.0, "w_bat": 0.0,
-    "device_t": 0.0, "battery_t": 0.0, "total_kwh": 0.0, "load_status": False, 
+    "device_t": 0.0, "battery_t": 0.0, "total_kwh": 0.0, "load_status": False, "load_w": 0.0, 
     "source": "SYSTEM IDLE / OFF 💤", "thermal_lock": False
 }
 
@@ -65,8 +70,114 @@ bms_cache = {
 audio_queue = Queue()
 
 app = Flask(__name__, 
-            template_folder='/home/pijay/solar_monitor/templates',
-            static_folder='/home/pijay/solar_monitor/static')
+            template_folder=os.path.join(BASE_DIR, 'templates'),
+            static_folder=os.path.join(BASE_DIR, 'static'))
+
+# ==============================================================================
+# 🔒 SECURITY LAYER  (everything below runs BEFORE any route is reached)
+# ==============================================================================
+DASH_USER = os.getenv("DASH_USER", "")
+DASH_PASS_HASH = os.getenv("DASH_PASS_HASH", "")
+DASH_DEBUG = os.getenv("DASH_DEBUG", "") == "1"   # temporary: logs login check results (never the password)
+if not DASH_USER or not DASH_PASS_HASH:
+    # Fail closed: never run an unprotected dashboard by accident.
+    raise SystemExit("Refusing to start: set DASH_USER and DASH_PASS_HASH in .env")
+
+MAX_FAILS, FAIL_WINDOW = 5, 300          # 5 wrong logins -> locked out for 5 minutes
+LOAD_MIN_INTERVAL = 2.0                  # seconds between 12V load toggles
+_fail_lock = threading.Lock()
+_fails = {}                              # ip -> [failure_count, window_start_time]
+_last_load_toggle = 0.0
+
+# scrypt is deliberately slow, and Basic Auth re-sends the password on EVERY request.
+# So after one successful full check we remember that exact login for a while.
+# Only a keyed digest is kept (in memory, never on disk); a restart clears it.
+AUTH_CACHE_TTL = 600                     # seconds before the full check runs again
+_CACHE_KEY = os.urandom(32)
+_ok_cache = {}                           # keyed digest -> expiry time
+
+def _cred_digest(user, pw):
+    return hmac.new(_CACHE_KEY, f"{user}\0{pw}".encode(), hashlib.sha256).hexdigest()
+
+def _locked_out(ip):
+    with _fail_lock:
+        rec = _fails.get(ip)
+        if not rec:
+            return False
+        if time.time() - rec[1] > FAIL_WINDOW:
+            _fails.pop(ip, None)
+            return False
+        return rec[0] >= MAX_FAILS
+
+def _record_fail(ip):
+    with _fail_lock:
+        rec = _fails.get(ip)
+        if not rec or time.time() - rec[1] > FAIL_WINDOW:
+            _fails[ip] = [1, time.time()]
+        else:
+            rec[0] += 1
+
+@app.before_request
+def require_login():
+    """Gate 1: every page, API call and static file needs a valid login."""
+    ip = request.remote_addr
+    if _locked_out(ip):
+        return Response("Too many failed attempts. Try again later.", 429)
+
+    auth = request.authorization
+    ok = False
+    user_ok = pass_ok = False
+    hit = False
+    if auth and auth.username is not None and auth.password is not None:
+        digest = _cred_digest(auth.username, auth.password)
+        with _fail_lock:
+            exp = _ok_cache.get(digest)
+        if exp and exp > time.time():
+            user_ok = pass_ok = ok = hit = True          # fast path: already verified recently
+        else:
+            # Slow path. Both checks always run, and compare_digest avoids timing leaks.
+            user_ok = hmac.compare_digest(auth.username.encode(), DASH_USER.encode())
+            try:
+                pass_ok = check_password_hash(DASH_PASS_HASH, auth.password)
+            except Exception as e:
+                pass_ok = False
+                if DASH_DEBUG:
+                    print(f"[AUTH] hash check error: {type(e).__name__}")
+            ok = user_ok and pass_ok
+            if ok:
+                now = time.time()
+                with _fail_lock:
+                    for k in [k for k, v in _ok_cache.items() if v <= now]:
+                        _ok_cache.pop(k, None)           # drop expired entries
+                    _ok_cache[digest] = now + AUTH_CACHE_TTL
+    if DASH_DEBUG:
+        print(f"[AUTH] {request.method} {request.path} from {ip} | credentials_sent={auth is not None} "
+              f"user_ok={user_ok} pass_ok={pass_ok} cached={hit} | expected_user_len={len(DASH_USER)} hash_prefix={DASH_PASS_HASH[:7]!r} hash_len={len(DASH_PASS_HASH)}")
+    if not ok:
+        if auth:
+            _record_fail(ip)
+        return Response("Login required", 401, {"WWW-Authenticate": 'Basic realm="Solar Dashboard"'})
+
+    # Gate 2 (CSRF): state-changing requests must be JSON and come from this site.
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        if not request.is_json:
+            return jsonify({"status": "error", "message": "JSON required"}), 415
+        origin = request.headers.get("Origin")
+        if origin and urlparse(origin).netloc != request.host:
+            return jsonify({"status": "error", "message": "Cross-site request blocked"}), 403
+
+@app.after_request
+def security_headers(resp):
+    """Tell the browser to lock down what this page may do."""
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "SAMEORIGIN"   # own pages (e.g. <object> SVG icons) may embed; other sites may not
+    resp.headers["Referrer-Policy"] = "no-referrer"
+    resp.headers["Content-Security-Policy"] = (
+        "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
+        "object-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
+    if request.path.startswith("/api/"):
+        resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 @app.route('/')
 def home():
@@ -146,7 +257,7 @@ async def connect_and_poll_battery(bat_id, address):
 
     while True:
         try:
-            print(f"🔗 [BMS Loop] Attempting smooth handshake with {bat_id} at {address}...")
+            print(f"🔗 [BMS Loop] Attempting smooth handshake with {bat_id}...")   # address kept out of logs
             bms_cache[bat_id]["status"] = "Connecting..."
             
             # Explicitly clear old buffer arrays before a new connection to stop old packet bleed
@@ -260,6 +371,11 @@ def solar_polling_worker():
 
                     device_temp = ((res_live[37] << 8) | res_live[38]) / 100.0
 
+                    # 12V load terminal power (regs 0x310E low / 0x310F high)
+                    load_w_low = (res_live[31] << 8) | res_live[32]
+                    load_w_high = (res_live[33] << 8) | res_live[34]
+                    load_w = ((load_w_high << 16) | load_w_low) / 100.0
+
                     total_gen_low = (res_history[3] << 8) | res_history[4]
                     total_gen_high = (res_history[5] << 8) | res_history[6]
                     total_kwh = ((total_gen_high << 16) | total_gen_low) / 100.0
@@ -322,7 +438,7 @@ def solar_polling_worker():
                         "v_pv": round(pv_v, 1), "a_pv": round(pv_a, 1), "w_pv": round(pv_w, 0),
                         "v_bat": round(batt_v, 2), "a_bat": round(batt_a, 1), "w_bat": round(batt_w, 0),
                         "device_t": round(device_temp, 1), "total_kwh": round(total_kwh, 2),
-                        "load_status": hardware_load_is_on,
+                        "load_status": hardware_load_is_on, "load_w": round(load_w if hardware_load_is_on else 0.0, 1),
                         "source": trigger_source,
                         "thermal_lock": thermal_lock_active
                     })
@@ -335,7 +451,7 @@ def solar_polling_worker():
                     "v_pv": 0.0, "a_pv": 0.0, "w_pv": 0.0,
                     "v_bat": 0.0, "a_bat": 0.0, "w_bat": 0.0,
                     "device_t": 0.0, "total_kwh": 0.0,
-                    "load_status": False, "source": "SYSTEM IDLE / OFF 💤", "thermal_lock": False
+                    "load_status": False, "source": "SYSTEM IDLE / OFF 💤", "thermal_lock": False, "load_w": 0.0
                 })
         
         time.sleep(3.0)
@@ -547,11 +663,16 @@ def get_telemetry():
 @app.route('/api/load', methods=['POST'])
 def control_load():
     """Manual execution endpoint. Toggles 12V terminal using Function Codes 0x05 and 0x06."""
-    global solar_cache
+    global solar_cache, _last_load_toggle
     if solar_cache.get("thermal_lock", False):
         return jsonify({"status": "error", "message": "Overridden by automation! System temperature is too high."}), 403
 
-    data = request.get_json() or {}
+    now = time.time()
+    if now - _last_load_toggle < LOAD_MIN_INTERVAL:
+        return jsonify({"status": "error", "message": "Too fast. Wait a moment."}), 429
+    _last_load_toggle = now
+
+    data = request.get_json(silent=True) or {}
     action = data.get("action")
     if action not in ["ON", "OFF"]:
         return jsonify({"status": "error", "message": "Invalid targeted action parameter"}), 400
@@ -577,7 +698,8 @@ def control_load():
             solar_cache["source"] = "PHYSICAL BUTTON / MANUAL SLIDER 🔓" if action == "ON" else "SYSTEM IDLE / OFF 💤"
             return jsonify({"status": "success", "message": f"Load successfully turned {action}"})
         except Exception as e:
-            return jsonify({"status": "error", "message": str(e)}), 500
+            print(f"⚠️ [LOAD CONTROL ERROR]: {e}")   # details stay in the log, not the browser
+            return jsonify({"status": "error", "message": "Load control failed"}), 500
 
 if __name__ == "__main__":
     # Base Application Background Routines
@@ -593,4 +715,9 @@ if __name__ == "__main__":
     
     host_ip = os.getenv("FLASK_RUN_HOST", "127.0.0.1")
     port_num = int(os.getenv("FLASK_RUN_PORT", 5001))
-    app.run(host=host_ip, port=port_num, debug=False, use_reloader=False)
+    try:
+        from waitress import serve     # real production server, single process (keeps BLE threads unique)
+        serve(app, host=host_ip, port=port_num, threads=8)
+    except ImportError:
+        print("⚠️ waitress not installed (pip install waitress); using Flask's built-in server")
+        app.run(host=host_ip, port=port_num, debug=False, use_reloader=False)

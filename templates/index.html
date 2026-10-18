@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Solar & Weather Dashboard</title>
     <link rel="stylesheet" href="../static/css/style.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/solar_flow.css') }}">
   </head>
   <body>
     <div class="dashboard-container">
@@ -190,9 +191,12 @@
               Connecting to Relay...
             </button>
           </div>
+          <!-- where you want the diagram to appear -->
+          {% include 'solar_flow.html' %}
         </div>
       </div>
     </div>
+    <script src="{{ url_for('static', filename='js/solar_flow.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   </body>
 </html>

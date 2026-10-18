@@ -1,0 +1,102 @@
+<div class="sf" id="solar-flow">
+  <div class="sf-head">
+    <div class="sf-title">Solar power flow<small>2 solar panels · EPever 3210 MPPT · 2 × 12.8 V 100 Ah in parallel · 12 V pure sine inverter</small></div>
+    <div class="sf-pill"><span class="sf-dot"></span><span data-status>Connecting…</span></div>
+  </div>
+
+  <svg viewBox="0 165 1100 340" role="img" aria-label="Live solar energy flow diagram">
+    <defs>
+      <linearGradient id="sf-card" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16223a"/><stop offset="1" stop-color="#0e1626"/></linearGradient>
+      <linearGradient id="sf-pv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d3b6b"/><stop offset="1" stop-color="#0f2142"/></linearGradient>
+      <radialGradient id="sf-sun"><stop offset="0" stop-color="#ffd36b"/><stop offset="1" stop-color="#ffb020" stop-opacity="0"/></radialGradient>
+      <g id="sf-panel">
+        <g transform="skewX(-14)" fill="url(#sf-pv)" stroke="#5f8fd6" stroke-width=".8">
+          <rect width="15" height="11"/><rect x="17" width="15" height="11"/><rect x="34" width="15" height="11"/>
+          <rect y="13" width="15" height="11"/><rect x="17" y="13" width="15" height="11"/><rect x="34" y="13" width="15" height="11"/>
+        </g>
+      </g>
+    </defs>
+
+    <!-- rails + animated flows -->
+    <g>
+      <path class="sf-rail" d="M210 260 H300"/>
+      <path class="sf-rail" d="M395 325 V395"/>
+      <path class="sf-rail" d="M490 260 H580"/>
+      <path class="sf-rail" d="M770 260 H860"/>
+      <path class="sf-rail" d="M960 325 V400"/>
+      <path class="sf-flow off" id="sf-f1" d="M210 260 H300" style="stroke:var(--sun);color:var(--sun)"/>
+      <path class="sf-flow off" id="sf-f6" d="M395 325 V395" style="stroke:var(--dc);color:var(--dc)"/>
+      <path class="sf-flow off" id="sf-f3" d="M490 260 H580" style="stroke:var(--mppt);color:var(--mppt)"/>
+      <path class="sf-flow off" id="sf-f4" d="M770 260 H860" style="stroke:var(--inv);color:var(--inv)"/>
+      <path class="sf-flow off" id="sf-f5" d="M960 325 V400" style="stroke:var(--ac);color:var(--ac)"/>
+    </g>
+    <text class="t-flow" x="535" y="243" fill="#3ddc97"><tspan data-k="cw" data-d="0">0</tspan> W</text>
+    <text class="t-flow" x="815" y="243" fill="#7aa2ff"><tspan data-k="idc" data-d="0">0</tspan> W</text>
+
+    <!-- Solar panels (one combined input to the MPPT) -->
+    <g class="n-glow" id="sf-n-pv1">
+      <rect class="n-card" x="20" y="190" width="190" height="140" rx="14"/>
+      <circle cx="180" cy="236" r="34" fill="url(#sf-sun)" data-sun="1"/>
+      <use href="#sf-panel" x="156" y="208"/>
+      <use href="#sf-panel" x="156" y="240"/>
+      <text class="t-name" x="38" y="217">Solar panels</text>
+      <text class="t-big" x="38" y="268"><tspan data-k="pv1w" data-d="0">0</tspan><tspan class="t-unit"> W</tspan></text>
+      <text class="t-sub" x="38" y="296"><tspan data-k="pv1v" data-d="1">0.0</tspan> V · <tspan data-k="pv1a" data-d="1">0.0</tspan> A</text>
+      <text class="t-sub" x="38" y="316">2 panels · 1 MPPT input</text>
+    </g>
+
+    <!-- MPPT -->
+    <g class="n-glow" id="sf-n-mppt">
+      <rect class="n-card" x="300" y="195" width="190" height="130" rx="14"/>
+      <text class="t-name" x="318" y="222">EPever 3210 MPPT</text>
+      <text class="t-big" x="318" y="264"><tspan data-k="cw" data-d="0">0</tspan><tspan class="t-unit"> W out</tspan></text>
+      <text class="t-sub" x="318" y="290"><tspan data-k="cstate">—</tspan></text>
+      <text class="t-sub" x="318" y="310">Controller <tspan data-k="ctemp" data-d="0">0</tspan> °C</text>
+    </g>
+
+    <!-- Battery -->
+    <g class="n-glow" id="sf-n-bat">
+      <rect class="n-card" x="580" y="180" width="190" height="160" rx="14"/>
+      <text class="t-name" x="598" y="207">Battery bank · 200 Ah</text>
+      <text class="t-big" x="598" y="248"><tspan data-k="bsoc" data-d="0">0</tspan><tspan class="t-unit"> %</tspan></text>
+      <rect x="598" y="264" width="154" height="16" rx="8" fill="#0a1220" stroke="var(--line)"/>
+      <rect class="soc-fill" id="sf-soc" x="598" y="264" width="0" height="16" rx="8" fill="var(--mppt)"/>
+      <text class="t-sub" x="598" y="302"><tspan data-k="bv" data-d="2">0.00</tspan> V · <tspan data-k="ba" data-d="1" data-sign="1">0.0</tspan> A</text>
+      <text class="chip" id="sf-bstate" x="598" y="324" fill="var(--mut)">Idle</text>
+      <text class="t-sub" x="752" y="324" text-anchor="end"><tspan data-k="btemp" data-d="0">0</tspan> °C</text>
+    </g>
+
+    <!-- Inverter -->
+    <g class="n-glow" id="sf-n-inv">
+      <rect class="n-card" x="860" y="195" width="200" height="130" rx="14"/>
+      <text class="t-name" x="878" y="222">12 V pure sine inverter</text>
+      <text class="t-big" x="878" y="264"><tspan data-k="iac" data-d="0">0</tspan><tspan class="t-unit"> W AC</tspan></text>
+      <path class="sine" d="M878 292 q9 -14 18 0 t18 0 t18 0 t18 0 t18 0 t18 0 t18 0 t18 0 t18 0"/>
+      <text class="t-sub" x="878" y="314">Efficiency <tspan data-k="ieff" data-d="0">0</tspan> %</text>
+    </g>
+
+    <!-- 12 V load output of the MPPT -->
+    <g class="n-glow" id="sf-n-dc">
+      <rect class="n-card" x="300" y="395" width="190" height="95" rx="14"/>
+      <text class="t-name" x="318" y="421">12 V load output</text>
+      <text class="chip" id="sf-lstate" x="472" y="421" text-anchor="end" fill="var(--mut)">OFF</text>
+      <text class="t-big" x="318" y="456"><tspan data-k="lw" data-d="1">0</tspan><tspan class="t-unit"> W</tspan></text>
+      <text class="t-sub" id="sf-lsrc" x="318" y="478">Off</text>
+    </g>
+
+    <!-- Loads -->
+    <g class="n-glow" id="sf-n-load">
+      <rect class="n-card" x="860" y="400" width="200" height="90" rx="14"/>
+      <text class="t-name" x="878" y="426">AC loads</text>
+      <text class="t-big" x="878" y="462"><tspan data-k="iac" data-d="0">0</tspan><tspan class="t-unit"> W</tspan></text>
+      <text class="t-sub" x="1042" y="462" text-anchor="end"><tspan data-k="lpct" data-d="0">0</tspan>% of rating</text>
+    </g>
+  </svg>
+
+  <div class="sf-kpis">
+    <div class="sf-kpi"><span>Solar input</span><b data-k="pvt" data-d="0">0</b><i>W</i></div>
+    <div class="sf-kpi"><span>Battery power</span><b data-k="bw" data-d="0" data-sign="1">0</b><i>W</i></div>
+    <div class="sf-kpi"><span>AC output</span><b data-k="iac" data-d="0">0</b><i>W</i></div>
+    <div class="sf-kpi"><span>System efficiency</span><b data-k="seff" data-d="0">0</b><i>%</i></div>
+  </div>
+</div>

@@ -47,9 +47,11 @@ function fetchTelemetrySmart() {
             document.getElementById('weather-wind').textContent = `${data.weather.wind_speed} mph`;
 
             const iconName = getIconFilename(data.weather.wmo_code, data.weather.is_day);
-            document.getElementById('weather-icon-container').innerHTML = 
-                `<object type="image/svg+xml" data="/static/weather-icons/${iconName}" class="weather-svg"></object>`;
-
+            const iconBox = document.getElementById('weather-icon-container');
+                if (iconBox.dataset.icon !== iconName) {
+                iconBox.dataset.icon = iconName;
+                iconBox.innerHTML = `<img src="/static/weather-icons/${iconName}" class="weather-svg" alt="">`;
+            }
             // 2. Render Forecast Array Rows
             const forecastContainer = document.getElementById('forecast-grid-container');
             forecastContainer.innerHTML = '';
