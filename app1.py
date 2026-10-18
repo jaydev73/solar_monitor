@@ -33,9 +33,9 @@ modbus_lock = threading.Lock()
 TEMP_HIGH_TRIGGER = 38
 TEMP_LOW_TRIGGER = 31
 
-LAT = os.getenv("LATITUDE", "34.0522")
-LON = os.getenv("LONGITUDE", "-118.2437")
-TZ = os.getenv("TIMEZONE", "America%2FLos_Angeles")
+LAT = os.getenv("LATITUDE", "")
+LON = os.getenv("LONGITUDE", "")
+TZ = os.getenv("TIMEZONE", "")
 
 BATTERY_1_ADDRESS = os.getenv("BATTERY_1_ADDRESS", "00:00:00:00:00:00")
 BATTERY_2_ADDRESS = os.getenv("BATTERY_2_ADDRESS", "00:00:00:00:00:00")
