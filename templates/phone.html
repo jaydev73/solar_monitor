@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wall phone control</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/phone_control.css') }}">
+</head>
+<body>
+<main class="card">
+  <h1>Wall phone</h1>
+  <p class="chips"><span class="chip" id="c-online">Checking…</span><span class="chip" id="c-screen">Screen: –</span><span class="chip" id="c-batt">Battery: –</span></p>
+  <div class="row">
+    <button data-act="wake">Wake screen</button>
+    <button data-act="sleep">Sleep screen</button>
+    <button data-act="reload">Reload page</button>
+  </div>
+  <div class="row">
+    <input id="say-text" maxlength="140" placeholder="Text to speak through the phone" aria-label="Text to speak">
+    <button id="say-btn">Speak</button>
+  </div>
+  <p id="msg" role="status"></p>
+  <p class="note">These buttons control the phone only. Nothing here can change the solar equipment. <a href="/">Back to dashboard</a></p>
+</main>
+<script src="{{ url_for('static', filename='js/phone_control.js') }}" defer></script>
+</body>
+</html>

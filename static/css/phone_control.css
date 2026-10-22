@@ -1,0 +1,8 @@
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#0b1220,#14305a);color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.card{width:min(520px,92vw);background:#111a2b;border:1px solid #22324d;border-radius:18px;padding:22px}
+h1{margin:0 0 12px;font-size:22px}.chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.chip{font-size:14px;padding:6px 12px;border:1px solid #22324d;border-radius:999px;color:#a9bddb}.chip.ok{color:#3ddc97;border-color:#2b6b55}.chip.bad{color:#ff8a8a;border-color:#7a3b3b}
+.row{display:flex;gap:10px;margin-bottom:12px}
+button{flex:1;padding:12px 10px;border:0;border-radius:12px;background:#2563eb;color:#fff;font-size:16px;font-weight:600;cursor:pointer}
+button:disabled{opacity:.5}input{flex:2;min-width:0;padding:12px;border-radius:12px;border:1px solid #22324d;background:#0a1220;color:#fff;font-size:16px}
+#msg{min-height:22px;color:#a9bddb;margin:6px 0}.note{font-size:13px;color:#8696b3}.note a{color:#7aa2ff}

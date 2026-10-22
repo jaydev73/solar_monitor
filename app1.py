@@ -12,9 +12,11 @@ import logging
 from flask import Flask, render_template, jsonify, request, Response
 from dotenv import load_dotenv
 import hmac
+import re
+from urllib.parse import unquote, urlparse
 import hashlib
-from urllib.parse import urlparse
 from werkzeug.security import check_password_hash
+import phone   # optional wall-phone control; inactive unless PHONE_URL is set
 from bleak import BleakClient
 from gtts import gTTS
 import pygame
@@ -33,9 +35,9 @@ modbus_lock = threading.Lock()
 TEMP_HIGH_TRIGGER = 38
 TEMP_LOW_TRIGGER = 31
 
-LAT = os.getenv("LATITUDE", "")
-LON = os.getenv("LONGITUDE", "")
-TZ = os.getenv("TIMEZONE", "")
+LAT = os.getenv("LATITUDE", "34.0522")
+LON = os.getenv("LONGITUDE", "-118.2437")
+TZ = os.getenv("TIMEZONE", "America%2FLos_Angeles")
 
 BATTERY_1_ADDRESS = os.getenv("BATTERY_1_ADDRESS", "00:00:00:00:00:00")
 BATTERY_2_ADDRESS = os.getenv("BATTERY_2_ADDRESS", "00:00:00:00:00:00")
@@ -78,16 +80,30 @@ app = Flask(__name__,
 # ==============================================================================
 DASH_USER = os.getenv("DASH_USER", "")
 DASH_PASS_HASH = os.getenv("DASH_PASS_HASH", "")
+# Extra https sites the page may load from (CDNs, fonts), space-separated, e.g.
+#   CSP_ALLOW=https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com
+_csp_extra = "".join(" " + h for h in os.getenv("CSP_ALLOW", "").split() if h.startswith("https://"))
+CSP_OFF = os.getenv("DASH_CSP", "") == "off"      # TEST ONLY: turns the browser policy off
+CSP_VALUE = ("default-src 'self'; "
+             f"img-src 'self' data: blob:{_csp_extra}; "
+             f"style-src 'self' 'unsafe-inline'{_csp_extra}; "
+             f"script-src 'self'{_csp_extra}; "
+             f"font-src 'self' data:{_csp_extra}; "
+             "connect-src 'self'; object-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
+# Optional read-only key for the Echo Show display (it cannot type a password).
+# Grants GET access ONLY to the display page, its data and its two asset files.
+DISPLAY_KEY = os.getenv("DISPLAY_KEY", "")
+if DISPLAY_KEY and len(DISPLAY_KEY) < 24:
+    raise SystemExit("DISPLAY_KEY must be at least 24 characters (python3 -c \"import secrets;print(secrets.token_urlsafe(32))\")")
+DISPLAY_PATHS = {"/display", "/api/display", "/static/css/display.css", "/static/js/display.js"}
 DASH_DEBUG = os.getenv("DASH_DEBUG", "") == "1"   # temporary: logs login check results (never the password)
 if not DASH_USER or not DASH_PASS_HASH:
     # Fail closed: never run an unprotected dashboard by accident.
     raise SystemExit("Refusing to start: set DASH_USER and DASH_PASS_HASH in .env")
 
 MAX_FAILS, FAIL_WINDOW = 5, 300          # 5 wrong logins -> locked out for 5 minutes
-LOAD_MIN_INTERVAL = 2.0                  # seconds between 12V load toggles
 _fail_lock = threading.Lock()
 _fails = {}                              # ip -> [failure_count, window_start_time]
-_last_load_toggle = 0.0
 
 # scrypt is deliberately slow, and Basic Auth re-sends the password on EVERY request.
 # So after one successful full check we remember that exact login for a while.
@@ -124,6 +140,14 @@ def require_login():
     if _locked_out(ip):
         return Response("Too many failed attempts. Try again later.", 429)
 
+    if DISPLAY_KEY and request.method in ("GET", "HEAD") and request.path in DISPLAY_PATHS:
+        supplied = request.args.get("key") or request.headers.get("X-Display-Key", "")
+        if supplied:
+            if hmac.compare_digest(supplied.encode(), DISPLAY_KEY.encode()):
+                return None          # read-only display access granted
+            _record_fail(ip)
+            return Response("Forbidden", 403)
+
     auth = request.authorization
     ok = False
     user_ok = pass_ok = False
@@ -158,13 +182,17 @@ def require_login():
             _record_fail(ip)
         return Response("Login required", 401, {"WWW-Authenticate": 'Basic realm="Solar Dashboard"'})
 
-    # Gate 2 (CSRF): state-changing requests must be JSON and come from this site.
-    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+    # Gate 2: this server is READ-ONLY. The only writes to the controller come from the
+    # internal thermal automation, never from a web request.
+    if request.method not in ("GET", "HEAD", "OPTIONS"):
+        # The ONLY writable endpoints control the wall phone, never the solar equipment.
+        if not (request.method == "POST" and request.path.startswith("/api/phone/")):
+            return Response("Read-only dashboard", 405)
         if not request.is_json:
-            return jsonify({"status": "error", "message": "JSON required"}), 415
+            return jsonify({"ok": False, "message": "JSON required"}), 415
         origin = request.headers.get("Origin")
         if origin and urlparse(origin).netloc != request.host:
-            return jsonify({"status": "error", "message": "Cross-site request blocked"}), 403
+            return jsonify({"ok": False, "message": "Cross-site request blocked"}), 403
 
 @app.after_request
 def security_headers(resp):
@@ -172,9 +200,8 @@ def security_headers(resp):
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["X-Frame-Options"] = "SAMEORIGIN"   # own pages (e.g. <object> SVG icons) may embed; other sites may not
     resp.headers["Referrer-Policy"] = "no-referrer"
-    resp.headers["Content-Security-Policy"] = (
-        "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
-        "object-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
+    if not CSP_OFF:
+        resp.headers["Content-Security-Policy"] = CSP_VALUE
     if request.path.startswith("/api/"):
         resp.headers["Cache-Control"] = "no-store"
     return resp
@@ -660,50 +687,71 @@ def get_telemetry():
         }
     })
 
-@app.route('/api/load', methods=['POST'])
-def control_load():
-    """Manual execution endpoint. Toggles 12V terminal using Function Codes 0x05 and 0x06."""
-    global solar_cache, _last_load_toggle
-    if solar_cache.get("thermal_lock", False):
-        return jsonify({"status": "error", "message": "Overridden by automation! System temperature is too high."}), 403
+_last_phone_cmd = 0.0
 
-    now = time.time()
-    if now - _last_load_toggle < LOAD_MIN_INTERVAL:
-        return jsonify({"status": "error", "message": "Too fast. Wait a moment."}), 429
-    _last_load_toggle = now
+@app.route('/phone')
+def phone_page():
+    """Control page for the wall phone (login required; the display key does not work here)."""
+    return render_template('phone.html')
 
-    data = request.get_json(silent=True) or {}
-    action = data.get("action")
-    if action not in ["ON", "OFF"]:
-        return jsonify({"status": "error", "message": "Invalid targeted action parameter"}), 400
+@app.route('/api/phone/status', methods=['GET'])
+def phone_status():
+    return jsonify(phone.status())
 
-    with modbus_lock:
-        try:
-            res_status = execute_modbus_query(0x04, 0x3201, 2)
-            if not res_status or len(res_status) < 7:
-                return jsonify({"status": "error", "message": "Device dropped tracking validation query."}), 500
-            
-            config_reg = (res_status[5] << 8) | res_status[6]
-            if (config_reg & 0x01) == 0:
-                new_config = config_reg | 0x01
-                execute_modbus_query(0x06, 0x3202, new_config)
-                time.sleep(0.1)
+@app.route('/api/phone/<action>', methods=['POST'])
+def phone_command(action):
+    global _last_phone_cmd
+    if not phone.enabled():
+        return jsonify({"ok": False, "message": "Phone control is not configured"}), 400
+    if time.time() - _last_phone_cmd < 1.0:
+        return jsonify({"ok": False, "message": "Too fast"}), 429
+    _last_phone_cmd = time.time()
+    if action == "wake":
+        ok = phone.screen_on()
+    elif action == "sleep":
+        ok = phone.screen_off()
+    elif action == "reload":
+        ok = phone.reload_page()
+    elif action == "say":
+        text = re.sub(r"[^\x20-\x7E]", "", str((request.get_json(silent=True) or {}).get("text", ""))).strip()[:140]
+        if not text:
+            return jsonify({"ok": False, "message": "No text"}), 400
+        ok = phone.screen_on() and phone.say(text)
+    else:
+        return jsonify({"ok": False, "message": "Unknown action"}), 404
+    return jsonify({"ok": bool(ok)})
 
-            target_hex_value = 0xFF00 if action == "ON" else 0x0000
-            write_res = execute_modbus_query(0x05, 0x0002, target_hex_value)
-            if not write_res:
-                return jsonify({"status": "error", "message": "Raw coil instruction failed"}), 500
+@app.route('/display')
+def display_page():
+    """Echo Show 5 page. Open once as /display?key=YOUR_DISPLAY_KEY and bookmark it."""
+    return render_template('display.html', key=request.args.get('key', ''))
 
-            solar_cache["load_status"] = (action == "ON")
-            solar_cache["source"] = "PHYSICAL BUTTON / MANUAL SLIDER 🔓" if action == "ON" else "SYSTEM IDLE / OFF 💤"
-            return jsonify({"status": "success", "message": f"Load successfully turned {action}"})
-        except Exception as e:
-            print(f"⚠️ [LOAD CONTROL ERROR]: {e}")   # details stay in the log, not the browser
-            return jsonify({"status": "error", "message": "Load control failed"}), 500
+@app.route('/api/display', methods=['GET'])
+def display_data():
+    """Slim, read-only payload for the display: readings only, no addresses."""
+    s, b, cur = solar_cache, bms_cache, weather_cache["current"]
+    today = (weather_cache["forecast"] or [{}])[0]
+    f = lambda v: float(v or 0)
+    ctrl_out, load_w = f(s.get("w_bat")), f(s.get("load_w"))
+    inv_dc = max(0.0, ctrl_out - load_w - f(b["total_wattage"]))   # estimate: no AC sensor
+    return jsonify({
+        "tz": unquote(TZ),
+        "online": {"epever": s.get("status") == "Online ✅", "weather": bool(weather_cache["online"])},
+        "weather": {"temp_f": cur["temp_f"], "condition": cur["condition"], "wmo_code": cur["wmo_code"],
+                    "is_day": cur["is_day"], "hi": today.get("max_temp"), "lo": today.get("min_temp")},
+        "pv": {"w": f(s.get("w_pv")), "v": f(s.get("v_pv")), "a": f(s.get("a_pv"))},
+        "mppt": {"state": re.sub(r"[^\x20-\x7E]", "", str(s.get("state", ""))).strip(),
+                 "out_w": ctrl_out, "temp_c": f(s.get("device_t"))},
+        "fan": {"on": bool(s.get("load_status")), "w": load_w,
+                "mode": "auto" if "THERMAL" in str(s.get("source", "")).upper() else ("manual" if s.get("load_status") else "off")},
+        "battery": {"soc": f(b["avg_soc"]), "v": f(b["avg_voltage"]), "a": f(b["total_current"])},
+        "inverter": {"dc_w": round(inv_dc, 1), "ac_w": round(inv_dc * 0.9, 1)}
+    })
 
 if __name__ == "__main__":
     # Base Application Background Routines
     threading.Thread(target=fetch_los_angeles_weather, daemon=True).start()
+    phone.start_events(solar_cache, bms_cache)   # no-op unless PHONE_URL is set
     threading.Thread(target=solar_polling_worker, daemon=True).start()
     threading.Thread(target=bms_asyncio_thread_worker, daemon=True).start()
     

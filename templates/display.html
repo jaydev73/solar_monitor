@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solar display</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/display.css') }}{% if key %}?key={{ key|urlencode }}{% endif %}">
+</head>
+<body class="st-day">
+<div id="stage">
+  <div class="bar">
+    <div><div class="clock"><span id="clk">--:--</span><small id="ampm"></small></div><div class="date" id="date">&nbsp;</div></div>
+    <div class="wx"><svg id="wxicon" width="64" height="56" viewBox="0 0 64 56" aria-hidden="true"></svg>
+      <div><div class="temp"><span data-k="temp">--</span>°F</div><div class="cond"><span data-k="cond">Connecting…</span> · <span data-k="hl"></span></div></div></div>
+  </div>
+  <svg id="flow" width="960" height="290" viewBox="0 0 960 290" role="img" aria-label="Solar energy flow">
+    <path class="rail" d="M152 70H242M334 70H434M540 70H626M720 70H818"/>
+    <path class="f off" id="f1" d="M152 70H242" stroke="#ffb020"/>
+    <path class="f off" id="f2" d="M334 70H434" stroke="#3ddc97"/>
+    <path class="f off" id="f3" d="M540 70H626" stroke="#7aa2ff"/>
+    <path class="f off" id="f4" d="M720 70H818" stroke="#c4a1ff"/>
+    <g class="art-day"><g class="rays"><circle cx="68" cy="46" r="15" fill="#ffb020"/><path d="M68 20v-8M68 72v8M42 46h-8M94 46h8M50 28l-6-6M86 64l6 6M86 28l6-6M50 64l-6 6" stroke="#ffb020" stroke-width="4" stroke-linecap="round"/></g>
+      <g transform="translate(88 58) skewX(-14)" fill="#16315c" stroke="#5f8fd6" stroke-width="1.5"><rect width="20" height="14"/><rect x="22" width="20" height="14"/><rect x="44" width="20" height="14"/><rect y="16" width="20" height="14"/><rect x="22" y="16" width="20" height="14"/><rect x="44" y="16" width="20" height="14"/></g></g>
+    <path class="art-low" d="M52 74a10 10 0 0 1 1-20a15 15 0 0 1 29 3a9 9 0 0 1 0 17z" fill="#c9d6ee"/>
+    <g class="art-night"><path d="M76 26a22 22 0 1 0 14 38a18 18 0 0 1-14-38z" fill="#dfe8ff"/><g fill="#dfe8ff"><circle cx="104" cy="30" r="2.5"/><circle cx="118" cy="48" r="2"/><circle cx="96" cy="14" r="1.8"/></g>
+      <g transform="translate(88 70) skewX(-14)" fill="#101b30" stroke="#3a4f78" stroke-width="1.5"><rect width="20" height="12"/><rect x="22" width="20" height="12"/><rect x="44" width="20" height="12"/><rect y="14" width="20" height="12"/><rect x="22" y="14" width="20" height="12"/><rect x="44" y="14" width="20" height="12"/></g></g>
+    <rect id="mbox" x="246" y="38" width="84" height="66" rx="12" fill="#111a2b" stroke="#3ddc97" stroke-width="3"/>
+    <rect x="257" y="48" width="62" height="20" rx="4" fill="#050c18"/>
+    <text x="288" y="64" text-anchor="middle" font-size="15" font-weight="700" fill="#3ddc97" class="num">MPPT</text>
+    <g fill="#ffb020"><rect x="262" y="80" width="13" height="12" rx="2"/><rect x="282" y="80" width="13" height="12" rx="2"/><rect x="302" y="80" width="13" height="12" rx="2"/></g>
+    <rect x="438" y="44" width="86" height="54" rx="9" fill="#111a2b" stroke="#38bdf8" stroke-width="3"/><rect x="524" y="60" width="8" height="22" rx="2" fill="#38bdf8"/>
+    <g id="bars"><rect x="447" y="53" width="15" height="36" rx="3"/><rect x="467" y="53" width="15" height="36" rx="3"/><rect x="487" y="53" width="15" height="36" rx="3"/><rect x="507" y="53" width="15" height="36" rx="3"/></g>
+    <rect x="630" y="38" width="84" height="66" rx="12" fill="#111a2b" stroke="#7aa2ff" stroke-width="3"/>
+    <path d="M642 71q8 -14 16 0t16 0t16 0t16 0" fill="none" stroke="#c4a1ff" stroke-width="3" stroke-linecap="round"/>
+    <path d="M822 84L864 46L906 84V106H822Z" fill="#111a2b" stroke="#c4a1ff" stroke-width="3" stroke-linejoin="round"/><rect x="854" y="84" width="20" height="22" rx="2" fill="#c4a1ff"/>
+    <g class="n"><text x="100" y="152">Solar panels</text><text x="288" y="152">EPever MPPT</text><text x="482" y="152">Battery</text><text x="672" y="152">Inverter</text><text x="864" y="152">AC loads</text></g>
+    <g class="v"><text x="100" y="196"><tspan data-k="pv_w">0</tspan><tspan class="u"> W</tspan></text><text x="288" y="196"><tspan data-k="mppt_w">0</tspan><tspan class="u"> W</tspan></text>
+      <text x="482" y="196"><tspan data-k="soc">0</tspan><tspan class="u"> %</tspan></text><text x="672" y="196"><tspan data-k="ac_w">0</tspan><tspan class="u"> W</tspan></text><text x="864" y="196"><tspan data-k="ac_w">0</tspan><tspan class="u"> W</tspan></text></g>
+    <g class="s"><text x="100" y="226" data-k="pv_va"></text><text x="288" y="226" data-k="mppt_state"></text><text x="482" y="226" data-k="bat_va"></text><text x="672" y="226">est. AC output</text><text x="864" y="226" data-k="ac_pct"></text><text x="288" y="254" data-k="fan_txt"></text></g>
+  </svg>
+  <div class="foot"><div class="status"><span class="dot"></span><span id="status">Connecting…</span></div><div class="upd" id="upd"></div></div>
+  <div id="stale" hidden>No data</div>
+  <pre id="dbg" hidden></pre>
+</div>
+<script src="{{ url_for('static', filename='js/display.js') }}{% if key %}?key={{ key|urlencode }}{% endif %}" defer></script>
+</body>
+</html>
